@@ -7,6 +7,14 @@ import * as Location from 'expo-location'
 import { Button } from 'react-native';
 import PermissionsButton from './PermissionButton';
 
+
+//KESKIVIIKKONA TEE:
+//buildatussa sovelluksessa ei nyt toimi background TaskManager
+//pitää olla lupa App.jsonissa
+//ja buildattuun versioon pitää laittaa ne luvat ilmeisesti Easing.jsoniin
+
+
+
 //MITÄ KUULUU OLLA APP.JSONISSA esim expo-location: "locationAlwaysAndWhenInUsePermission": "
 
 //yläpalkkiin "seurataan sijaintia" --> pysyy paremmin hengissä

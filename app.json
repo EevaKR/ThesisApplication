@@ -1,5 +1,6 @@
 {
   "expo": {
+    
     "name": "thesisapp",
     "slug": "thesisapp",
     "version": "1.0.0",
@@ -16,6 +17,13 @@
       "supportsTablet": true
     },
     "android": {
+      
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
+
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -27,7 +35,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-background-task"
+      "expo-background-task",
+      
+      "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Sovellus tarvitsee sijaintitiedot myös taustalla."
+        }
+
     ],
     "extra": {
       "eas": {

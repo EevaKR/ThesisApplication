@@ -4,12 +4,14 @@ import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import { useState, useEffect } from 'react';
 
+//Muista katsoa tarviiko android manifestiin
+//tehdä jotain paikannuslupia
 
-const LOCATION_TASK_NAME = 'background-location-task';
+const BACKGROUND_LOCATION = 'background-location-task';
 
 let setLocationInfo = null; //tämä uusi kohta
 
-TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }) => {
+TaskManager.defineTask(BACKGROUND_LOCATION, ({ data, error }) => {
     if (error) {
         console.error("Location task error: ", error.message)
         return;
@@ -30,15 +32,20 @@ const PermissionsButton = () => {
 
     const requestPermissions = async () => {
         const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+        console.log("Foreground permission: ", foregroundStatus)
+
         if (foregroundStatus === 'granted') {
             const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+            console.log("Background permissions: ", backgroundStatus)
+
             if (backgroundStatus === 'granted') {
                 await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
                     accuracy: Location.Accuracy.Balanced,
-                    showsBackgroundLocationIndicator: true, //TARKISTA
-                    distanceInterval: 10, //TARKISTA
+                    //showsBackgroundLocationIndicator: true, //TARKISTA
+                    //distanceInterval: 10, //TARKISTA
 
                 });
+                console.log("Debuggausta, taustalla tapahtuva paikannus aloitettu")
             }
         }
     }
