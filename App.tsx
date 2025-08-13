@@ -8,25 +8,13 @@ import { Button } from 'react-native';
 import PermissionsButton from './PermissionButton';
 
 
-//KESKIVIIKKONA TEE:
-//buildatussa sovelluksessa ei nyt toimi background TaskManager
-//pitää olla lupa App.jsonissa
-//ja buildattuun versioon pitää laittaa ne luvat ilmeisesti Easing.jsoniin
 
-
-
-//MITÄ KUULUU OLLA APP.JSONISSA esim expo-location: "locationAlwaysAndWhenInUsePermission": "
 
 //yläpalkkiin "seurataan sijaintia" --> pysyy paremmin hengissä
 //eli status bariin notifikaatio
 //background job ajastetusti 30 sekunnin välein, mikä ei tee mitään
 //miten background jobin ajastus tehdään
 //lisää location 1 min välein päivitys TAI niin et kun sijainti muuttuu tarpeeksi
-//Hooks can only be called inside of the body of a function component."
-//TODO:
-//Sijaintiluvat on myönnettävä.
-//lokaatio toimii vain buildatussa versiossa
-//Androidilla sinun on pyydettävä sekä etualan että taustan käyttöoikeuksia.
 
 
 const BACKGROUND_LOCATION = 'BACKGROUND_LOCATION'
@@ -87,8 +75,7 @@ if (data) {
   return BackgroundTask.BackgroundTaskResult.Success;
 }) */
 /*
- */
-
+ */ 
 
 
 export default function App() {
@@ -97,7 +84,7 @@ export default function App() {
 
   /*await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
     accuracy: Location.Accuracy.Balanced,
-  }) */
+  }) */ 
 
 
 
@@ -105,7 +92,7 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.paragraph}>text</Text>
       <PermissionsButton></PermissionsButton>
-      <StatusBar style="auto" />
+      
     </View>
   );
 }
