@@ -3,48 +3,64 @@ import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import { useState, useEffect } from 'react';
 import { Button } from 'react-native-paper';
+import React, { useRef } from 'react';
 
+//MA:  JOS EI AUTA NIIN TEE NOTIFICAATIO
 
+//Yksi tapa lähestyä tätä ongelmaa voisi olla lähettää push-ilmoitus, jos sovelluksesi odottaa taustasijainnin seurantaa, mutta sitä ei ole tapahtunut hetkeen. Tällöin käyttäjä voi halutessaan reagoida ilmoitukseen ja kytkeä seurannan takaisin päälle.
+//timestamp logiin, näkee toimiiko background location
+//muista uusi branch
 //aloittaa nyt jo tietojen keräämisen vaikka nappia ei ole painettu
 //debuggaa!!!!! voisko johtua että lupa on jo annettu
 //painike ei siis siihen että aloittaa sijaintitietojen
 //keräämisen vaan lupien saamiseen
+//lisää expo file system
+//lisää google maps ja lokaation mukaan reitti
+//POLYLINELLA reitti näkymään kartalle
 
-
-
-//Muista katsoa tarviiko android manifestiin
-//tehdä jotain paikannuslupia
+//Muista katsoa tarviiko android manifestiin tehdä jotain paikannuslupia
 
 //mieti jatkossa mihin tiedot tallentuu(expo-file-system, sqlite, oma server, firebase)??
 //kartan toteutus
 
-const BACKGROUND_LOCATION = 'background-location-task';
+// ei toimi taustalla, lupaongelma??--> ei voi olla, luvat kunnossa
 
-//setLocationInfo ei ole käytössä
-let setLocationInfo = null; //tämä uusi kohta
+//ajastettu do nothing background task 
+TaskManager.defineTask('DO_NOTHING_TASK', async () => {
+  console.log('DO_NOTHING_TASK executed at', new Date().toISOString());
+  console.log('Taustatehtävä suoritettu!');
+  //TÄSTÄ PUUTTUU AJASTUS
+  return;
+});
+
+const BACKGROUND_LOCATION = 'background-location-task';
 
 //callback-funktio, joka suoritetaan, kun sijaintitietoja saapuu taustalla. Se on nimetty BACKGROUND_LOCATION, ja se käsittelee data-objektin, joka sisältää sijainnit.
 //TaskManager.defineTask rekisteröi tehtävän, joka aktivoituu kun Location.startLocationUpdatesAsync saa uusia sijaintipäivityksiä.
 //Funktio tarkistaa, onko tullut virhe (error) tai dataa (data).
 //Jos dataa on, se tulostaa sijainnit konsoliin.
-TaskManager.defineTask(BACKGROUND_LOCATION, ({ data, error }) => {
+TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
   if (error) {
-    console.error("Location task error: ", error.message)
+    console.error("Location task error: ", error.message);
     return;
   }
   if (data) {
-    const { locations } = data;
-    console.log("Received background locations: ", locations)
+    const { locations } = data as { locations: Location.LocationObject[] };
+    console.log("Received background locations: ", locations);
     if (setLocationInfo) {
-      locations.forEach((loc) => setLocationInfo(loc));
+      locations.forEach((loc: Location.LocationObject) => setLocationInfo!(loc));
     }
   }
 });
 
+
+//avaa mitä tämä tekee
+let setLocationInfo: ((location: Location.LocationObject) => void) | null = null;
+
 const PermissionsButton = () => {
   //const [location, setLocation] = useState<Location.LocationObject |null>(null);
   const [locations, setLocations] = useState<Location.LocationObject[]>([]);
-
+  const scrollViewRef = useRef<ScrollView>(null);
   /*useEffect(() => {
     setLocationInfo = setLocation; 
   }, []); */
@@ -52,7 +68,13 @@ const PermissionsButton = () => {
   useEffect(() => {
     setLocationInfo = (newLocation: Location.LocationObject) => {
       setLocations((prev) => [...prev, newLocation]);
+      scrollViewRef.current?.scrollToEnd({ animated: true });
     };
+
+    // Note: TaskManager tasks are automatically registered when defined
+    // The DO_NOTHING_TASK will run based on system scheduling, not a timer
+    console.log("DO_NOTHING_TASK is defined and ready");
+
   }, [])
 
   const requestPermissions = async () => {
@@ -64,12 +86,13 @@ const PermissionsButton = () => {
       console.log("Background permissions: ", backgroundStatus)
 
       if (backgroundStatus === 'granted') {
+
         await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
           accuracy: Location.Accuracy.Highest,
           activityType: Location.LocationActivityType.Fitness,
-          //distanceInterval:5, //päivittää sijainnin kun liikutaan 5metriä
-          timeInterval: 5000, //tai 5sekunnin välein
-
+          //distanceInterval: 1, //päivittää sijainnin kun liikutaan 5metriä
+          timeInterval: 10000, //tai 5sekunnin välein
+          //hoxxx!!! Molempien ehtojen pitää täyttyä, jotta uusi sijainti lähetetään
         });
         console.log("Debuggausta, taustalla tapahtuva paikannus aloitettu")
       }
@@ -79,7 +102,10 @@ const PermissionsButton = () => {
   return (
     <View style={styles.container}>
       <Button style={styles.button} onPress={requestPermissions} >ALOITA PAIKANNUSTIETOJEN KERÄÄMINEN</Button>
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView
+        style={styles.scrollContainer}
+        ref={scrollViewRef}
+      >
         {locations.length > 0 ? (
           locations.map((loc, index) => (
             <Text key={index} style={styles.locationText}>
