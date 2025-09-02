@@ -9,7 +9,34 @@ import React, { useRef } from 'react';
 import * as Notifications from 'expo-notifications'
 import * as FileSystem from 'expo-file-system';
 import Notification, { schedulePushNotification } from './notifications';
+import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import { LocationWithTimestamp, PermissionsButtonProps } from './types';
+import ModalOne from './ModalOne';
 
+
+//ei toimi buildattu versio
+//tee production ympäristöön oma eas:create secret google maps api keysta 
+//build ei toimi koska .gitignore == easignore
+//siirrä avain eri paikkaan ja app.json pois .gitignoresta
+//MAANANTAI: 
+//sit aloita testaaminen, piirtääkö luotettavasti reittiä
+
+//sit tee modal joka pakottaa käyttäjän antamaan luvan taustatoimintoihin
+//ja akun kulutukseen (kaksi eri vaihtoehtoa)
+//Pyytää akun optimoinnin ohittamista:
+
+//Korjaa expo file system yksinkertaisemmaksi kun poistat debuggauskamaa
+
+//VIKA VIIKKO
+
+//huomioi että nyt api-avain app.jsonissa ja app.json .gitignoressa 
+// --> tallenna joko eas.secretiin tai käytä env-muuttujia
+//JAA KOODI OSIIN SITTEN KUN TOIMII LOPULTA
+//SIIVOA YLIMÄÄRÄISET DEBUGGAUKSET JA 
+//EXPO_FILE_SYSTEM TALLENNUKSET POIS
+//hoxxx google maps voi vaatia modausta tuonne android kansioon
+//--> kts vanhoista matskuista mallia
+//--> ei siis välttis suostu buildaan tai ei toimi oikein
 //splash screen puuttuu
 //jaa eri sivuihin toiminnot mm importaa permission button, 
 //background taskit pitää olla app-sivulla
@@ -18,28 +45,10 @@ import Notification, { schedulePushNotification } from './notifications';
 //yksinkertaista vielä filestoragen tallennusta
 //ja testaa sen jälkeen toimiiko
 //tarkasta että kuvien numerointi pitää myös tekstissä paikkansa
-//sit tee map ja reitin piirtäminen
-
-//sit aloita testaaminen, piirtääkö luotettavasti reittiä
-
-// sit tee notifikaatio, onko nykyinen notifikaatio järjestelmän
-
-//sit tee modal joka pakottaa käyttäjän antamaan luvan taustatoimintoihin
-//ja akun kulutukseen (kaksi eri vaihtoehtoa)
-//Pyytää akun optimoinnin ohittamista:
-//Jos sovelluksesi tarvitsee taustatoimintaa (esim. sijainnin seuranta), kannattaa:
-
-//Käyttää Foreground Service-palvelua. -->> kirjaa tästä oppariin
-//Ilmoittaa käyttäjälle selkeästi, miksi taustatoiminta on tärkeää.
-//Ohjata käyttäjä asetuksiin tarvittaessa.
-
-
 const LOCATIONS_FILE = FileSystem.documentDirectory + 'background_locations.json';
 const DEBUG_LOG_FILE = FileSystem.documentDirectory + 'debug_logs.json';
 const ERROR_LOG_FILE = FileSystem.documentDirectory + 'error_logs.json';
 
-//TI: tee notificaatio loppuun !!! tee uusi branch buildin jälkeen
-//tee proper file handling --> auttaa background locationia toimimaan
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: false,
@@ -49,30 +58,20 @@ Notifications.setNotificationHandler({
   })
 })
 
-//Yksi tapa lähestyä tätä ongelmaa voisi olla lähettää push-ilmoitus, jos sovelluksesi odottaa taustasijainnin seurantaa, mutta sitä ei ole tapahtunut hetkeen. Tällöin käyttäjä voi halutessaan reagoida ilmoitukseen ja kytkeä seurannan takaisin päälle.
+//Expo tuki: (huono ohje)
+//Yksi tapa lähestyä tätä ongelmaa voisi olla lähettää push-ilmoitus, 
+//jos sovelluksesi odottaa taustasijainnin seurantaa, mutta sitä ei ole tapahtunut hetkeen. 
+// Tällöin käyttäjä voi halutessaan reagoida ilmoitukseen ja kytkeä seurannan takaisin päälle.
 //timestamp logiin, näkee toimiiko background location
-//muista uusi branch
-//aloittaa nyt jo tietojen keräämisen vaikka nappia ei ole painettu
-//debuggaa!!!!! voisko johtua että lupa on jo annettu
-//painike ei siis siihen että aloittaa sijaintitietojen
-//keräämisen vaan lupien saamiseen
-//lisää expo file system
-//lisää google maps ja lokaation mukaan reitti
-//POLYLINELLA reitti näkymään kartalle
-//KATSO AIKAISEMMISTA JOUNIN OHJEISTA KARTAN KÄYTTÖ!!!
+
 
 //Muista katsoa tarviiko android manifestiin tehdä jotain paikannuslupia
 
-//mieti jatkossa mihin tiedot tallentuu(expo-file-system, sqlite, oma server, firebase)??
-//kartan toteutus
-
-// ei toimi taustalla, lupaongelma??--> ei voi olla, luvat kunnossa
-
-//ajastettu do nothing background task 
+//ajastettu do nothing background task , TESTAA TOIMIIKO ILMAN TÄTÄ!!!!!!
 TaskManager.defineTask('DO_NOTHING_TASK', async () => {
   console.log('DO_NOTHING_TASK executed at', new Date().toISOString());
   console.log('Taustatehtävä suoritettu!');
-  //TÄSTÄ PUUTTUU AJASTUS
+  //TÄSTÄ PUUTTUU AJASTUS --> ei voi laittaa ajastusta, deprecated
   return;
 });
 
@@ -91,6 +90,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
         error: error.message,
         timestamp: new Date().toISOString()
       };
+      //sijainti tallentuu
       await FileSystem.writeAsStringAsync(ERROR_LOG_FILE, JSON.stringify(errorData));
 
     } catch (fileError) {
@@ -166,9 +166,11 @@ const logDebugInfo = async (message: string, data?: any) => {
 //avaa mitä tämä tekee
 let setLocationInfo: ((location: Location.LocationObject) => void) | null = null;
 
-const PermissionsButton = () => {
+
+//TÄMÄ PITÄISI OLLA ERI PAIKASSA
+const PermissionsButton = ({ setLocations, locations }: PermissionsButtonProps) => {
   //const [location, setLocation] = useState<Location.LocationObject |null>(null);
-  const [locations, setLocations] = useState<Location.LocationObject[]>([]);
+  //const [locations, setLocations] = useState<Location.LocationObject[]>([]);
   const [debugInfo, setDebugInfo] = useState<string>("");
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -238,7 +240,7 @@ const PermissionsButton = () => {
 
           await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
             accuracy: Location.Accuracy.Highest,
-//tämä uusi, testaa toimiiko!!!
+            //tämä uusi, testaa toimiiko!!!
             foregroundService: {
               notificationTitle: 'Sijainnin seuranta',
               notificationBody: 'Sovellus seuraa sijaintiasi taustalla.',
@@ -329,27 +331,24 @@ const PermissionsButton = () => {
   return (
     <View style={styles.container}>
       <Button style={styles.button} onPress={requestPermissions} >ALOITA PAIKANNUSTIETOJEN KERÄÄMINEN</Button>
-
       <View style={styles.debugButtonsContainer}>
         <Button style={styles.debugButton} onPress={showDebugInfo}>NÄYTÄ DEBUG INFO</Button>
         <Button style={styles.debugButton} onPress={clearLocationData}>TYHJENNÄ DATA</Button>
       </View>
-
       {debugInfo ? (
         <ScrollView style={styles.debugContainer}>
           <Text style={styles.debugText}>{debugInfo}</Text>
         </ScrollView>
       ) : null}
-
       <ScrollView
         style={styles.scrollContainer}
         ref={scrollViewRef}
       >
         {locations.length > 0 ? (
-          locations.map((loc, index) => (
+          locations.map((loc: LocationWithTimestamp, index: number) => (
             <Text key={index} style={styles.locationText}>
               {index + 1}. Leveysaste: {loc.coords.latitude}, Pituusaste: {loc.coords.longitude}
-              {(loc as any).receivedAt ? ` (${new Date((loc as any).receivedAt).toLocaleTimeString()})` : ''}
+              {loc.receivedAt ? ` (${new Date(loc.receivedAt).toLocaleTimeString()})` : ''}
             </Text>
           ))
         ) : (
@@ -359,15 +358,52 @@ const PermissionsButton = () => {
     </View>
   )
 }
+
+
+
+export default function App() {
+  const [locations, setLocations] = useState<LocationWithTimestamp[]>([]);
+  const [modalVisible, setModalVisible] = useState(true);
+
+  //määritellään karttaan kartan aloituspiste
+  const initialRegion = {
+    latitude: 65,
+    longitude: 26,
+    latitudeDelta: 10,
+    longitudeDelta: 10,
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>AJOPIIRTURI</Text>
+      <ModalOne visible={modalVisible} onClose={() => setModalVisible(false)}></ModalOne>
+      <PermissionsButton setLocations={setLocations} locations={locations}></PermissionsButton>
+      <MapView
+        provider={PROVIDER_GOOGLE}
+        initialRegion={initialRegion}
+        style={styles.map}
+        showsUserLocation
+        showsMyLocationButton={false}
+      >
+        <Polyline
+          coordinates={locations.map(loc => ({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude
+          }))}
+          strokeColor="#FF0000"
+          strokeWidth={4}
+        />
+      </MapView>
+    </View>
+  );
+}
+
 //Blue #043bb1
-
 //Blue Grotto #1e8ad3
-
 //Navy Blue #1d3537
 const styles = StyleSheet.create({
   text: {
     fontFamily: 'sans-serif-light',
-    flex: 1,
     padding: 10,
     borderRadius: 5,
     justifyContent: 'center',
@@ -378,19 +414,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     backgroundColor: 'white'
   },
   button: {
     backgroundColor: '#10bc10',
     padding: 10,
     borderRadius: 5,
-    fontFamily: 'sans-serif-light'
+    fontFamily: 'sans-serif-light',
+    flexDirection: 'row',
+    marginTop: 0,
+    gap: 10,
   },
   debugButtonsContainer: {
-    flexDirection: 'row',
-    marginTop: 10,
-    gap: 10,
+
   },
   debugButton: {
     backgroundColor: 'blue',
@@ -421,88 +458,12 @@ const styles = StyleSheet.create({
     width: '90%',
     maxHeight: '60%',
   },
-
   locationText: {
     marginBottom: 5,
     fontSize: 16,
   },
-  
-});
-
-
-
-
-
-//yläpalkkiin "seurataan sijaintia" --> pysyy paremmin hengissä
-//eli status bariin notifikaatio
-//background job ajastetusti 30 sekunnin välein, mikä ei tee mitään
-//miten background jobin ajastus tehdään
-//lisää location 1 min välein päivitys TAI niin et kun sijainti muuttuu tarpeeksi
-
-/*
-const BACKGROUND_LOCATION = 'BACKGROUND_LOCATION'
-
-const requestPermissions = async () => {
-  const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-  if (foregroundStatus === 'granted') {
-    const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-    if (backgroundStatus === 'granted') {
-      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
-        accuracy: Location.Accuracy.Balanced,
-      });
-    }
-  }
-};
-*/
-
-/*
-TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
-  if (error) {
-    console.error('Background location error:', error.message);
-    return;
-  }
-  if (data) {
-    const { locations } = data as { locations: Location.LocationObject[] };
-    console.log('Background locations received:', locations);
-    // do something with the locations captured in the background --> save
+  map: {
+    width: '100%',
+    height: '50%'
   }
 });
-*/
-//locations = taulukko sijaintiobjekteja
-//Kun käytät expo-location-moduulin taustapaikannusta, Expo automaattisesti lähettää sijaintipäivitykset taustatehtävälle. Nämä päivitykset tulevat data.locations-kenttään, joka on taulukko sijaintiobjekteja (LocationObject[]).
-/*TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
- if (error) {
-   console.error('Failed', error) 
-   return;
- }
-if (data) {
- const {locations} = data as { locations: Location.LocationObject[]};
- console.log('Received new locations', locations);
- }
-}); */
-
-//määritellään taustatehtävä, defining background task
-//Kun haluat käyttää taustapaikannusta, sinun täytyy ensin määritellä tehtävä TaskManager.defineTask-metodilla sovelluksen ylimmällä tasolla – eli ei komponentin sisällä, vaan esimerkiksi tiedoston alussa.
-/*TaskManager.defineTask(BACKGROUND_LOCATION, async () => {
-  try {
-    const now = Date.now();
-    console.log(`Location ..., now time as a example: ${new Date(now).toISOString()}`);
-  } catch (error) {
-    console.error('Failed', error);
-    return BackgroundTask.BackgroundTaskResult.Failed;
-  }
-  return BackgroundTask.BackgroundTaskResult.Success;
-}) */
-/*
- */
-
-
-export default function App() {
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>AJOPIIRTURI</Text>
-      <PermissionsButton></PermissionsButton>
-    </View>
-  );
-}
