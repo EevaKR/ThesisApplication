@@ -14,6 +14,10 @@ import { LocationWithTimestamp, PermissionsButtonProps } from './types';
 import ModalOne from './ModalOne';
 
 
+//eli viimeisenä, poista debug-data ja muokkaa simppeli expo-file-system
+//versio paikkatiedon tallennuksesta.
+//VARAA TÄLLE 2VIIKKOA!!!!
+
 //ei toimi buildattu versio
 //tee production ympäristöön oma eas:create secret google maps api keysta 
 //build ei toimi koska .gitignore == easignore
@@ -21,11 +25,8 @@ import ModalOne from './ModalOne';
 //MAANANTAI: 
 //sit aloita testaaminen, piirtääkö luotettavasti reittiä
 
-//sit tee modal joka pakottaa käyttäjän antamaan luvan taustatoimintoihin
-//ja akun kulutukseen (kaksi eri vaihtoehtoa)
-//Pyytää akun optimoinnin ohittamista:
 
-//Korjaa expo file system yksinkertaisemmaksi kun poistat debuggauskamaa
+
 
 //VIKA VIIKKO
 
@@ -372,6 +373,12 @@ export default function App() {
     latitudeDelta: 10,
     longitudeDelta: 10,
   };
+
+
+
+ //TEE TÄHÄN USE_EFFECT JOTTA NÄYTTÄÄ MODALIN VAIN KERRAN
+
+
 
   return (
     <View style={styles.container}>

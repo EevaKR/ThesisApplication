@@ -1,5 +1,13 @@
+//this is a modal what user can see when he/she opens the application
+//säädä tähän modaliin näkyvyys niin ettei se aina näy
+
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native'
 import React from 'react';
+import ExpoNativeConfigurationModule from './expo-native-configuration/src/ExpoNativeConfigurationModule';
+import ExpoNativeConfigurationView from './expo-native-configuration/src/ExpoNativeConfigurationView.web';
+import ExpoNativeConfigurationModuleWeb from './expo-native-configuration/src/ExpoNativeConfigurationModule.web';
+import { requireNativeModule } from 'expo-modules-core'
+
 
 type ModalOneProps = {
   visible: boolean;
@@ -7,6 +15,18 @@ type ModalOneProps = {
 }
 
 export default function ModalOne({ visible, onClose }: ModalOneProps) {
+
+  const ExpoNativeConfiguration = requireNativeModule('ExpoNativeConfiguration');
+
+  const handleOpenBatterySettings = () => {
+    try {
+      ExpoNativeConfiguration.openBatterySettings();
+    } catch (error) {
+      console.warn('Error while trying to open the settings: ', error);
+    }
+
+  };
+
   return (
     <Modal
       visible={visible}
@@ -15,6 +35,9 @@ export default function ModalOne({ visible, onClose }: ModalOneProps) {
       <View style={styles.view}>
         <View style={styles.container}>
           <Text style={styles.text}> Siirry Asetukset-valikkoon ja muuta virransäästöasetuksia -- "Rajoittamaton" </Text>
+          <TouchableOpacity onPress={handleOpenBatterySettings} style={styles.button}>
+            <Text style={styles.buttonText}> Avaa virransäästöasetukset </Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={onClose} style={styles.button}>
             <Text style={styles.buttonText}>Sulje</Text>
           </TouchableOpacity>
@@ -25,6 +48,9 @@ export default function ModalOne({ visible, onClose }: ModalOneProps) {
 }
 
 
+//sit tee modal joka pakottaa käyttäjän antamaan luvan taustatoimintoihin
+//ja akun kulutukseen (kaksi eri vaihtoehtoa)
+//Pyytää akun optimoinnin ohittamista:
 
 
 const styles = StyleSheet.create({
