@@ -1,21 +1,11 @@
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 
+//At this file determines TypeScript-types what app uses. Typescript needs to determine
+//types so using functions, variables and components will be safe
 // Location related types
-export interface LocationWithTimestamp extends Location.LocationObject {
-  receivedAt: string;
-  backgroundTask: boolean;
-}
 
 export interface LocationData {
-  locations: LocationWithTimestamp[];
-}
-
-// Debug and logging types
-export interface DebugLogEntry {
-  timestamp: string;
-  message: string;
-  data?: any;
+  locations: Location.LocationObject[];
 }
 
 export interface ErrorLogEntry {
@@ -46,9 +36,9 @@ export interface MapCoordinate {
 }
 
 // Component props types
-export interface PermissionsButtonProps {
-  setLocations: React.Dispatch<React.SetStateAction<LocationWithTimestamp[]>>;
-  locations: LocationWithTimestamp[];
+export interface Props {
+  setLocations: React.Dispatch<React.SetStateAction<Location.LocationObject[]>>;
+  locations: Location.LocationObject[];
 }
 
 // Notification types
@@ -103,13 +93,13 @@ export interface LocationTrackingConfig {
 
 // App state types
 export interface AppState {
-  locations: LocationWithTimestamp[];
+  locations: Location.LocationObject[];
   isTracking: boolean;
   hasPermissions: boolean;
   debugInfo: string;
 }
 
-// Style types (for better type safety with StyleSheet)
+// Style types 
 export interface AppStyles {
   container: object;
   text: object;
@@ -127,7 +117,7 @@ export interface AppStyles {
 // Utility types
 export type SetStateFunction<T> = React.Dispatch<React.SetStateAction<T>>;
 
-export type LocationSetter = SetStateFunction<LocationWithTimestamp[]>;
+export type LocationSetter = SetStateFunction<Location.LocationObject[]>;
 
 // Constants
 export const FILE_PATHS = {
@@ -141,22 +131,13 @@ export const TASK_NAMES = {
   DO_NOTHING: 'DO_NOTHING_TASK',
 } as const;
 
-// Type guards
-export const isLocationWithTimestamp = (location: any): location is LocationWithTimestamp => {
-  return location && 
-         typeof location.receivedAt === 'string' && 
-         typeof location.backgroundTask === 'boolean' &&
-         location.coords &&
-         typeof location.coords.latitude === 'number' &&
-         typeof location.coords.longitude === 'number';
-};
 
 export const isValidMapCoordinate = (coord: any): coord is MapCoordinate => {
-  return coord && 
-         typeof coord.latitude === 'number' && 
-         typeof coord.longitude === 'number' &&
-         coord.latitude >= -90 && coord.latitude <= 90 &&
-         coord.longitude >= -180 && coord.longitude <= 180;
+  return coord &&
+    typeof coord.latitude === 'number' &&
+    typeof coord.longitude === 'number' &&
+    coord.latitude >= -90 && coord.latitude <= 90 &&
+    coord.longitude >= -180 && coord.longitude <= 180;
 };
 
 // Async function types
