@@ -9,21 +9,37 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/cli": "latest",
+    "@react-navigation/native": "^7.1.17",
+    "@react-navigation/stack": "^7.4.8",
+    "eas-cli": "^16.17.4",
     "expo": "~53.0.20",
-    "expo-background-task": "~0.2.8",
+    "expo-device": "~7.1.4",
+    "expo-file-system": "~18.1.11",
     "expo-location": "~18.1.6",
+    "expo-notifications": "~0.31.4",
     "expo-status-bar": "~2.2.3",
     "expo-task-manager": "~13.1.6",
     "react": "19.0.0",
     "react-native": "0.79.5",
+    "react-native-maps": "1.20.1",
     "react-native-paper": "^5.14.5",
-    "react-native-vector-icons": "^10.3.0"
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-vector-icons": "^10.3.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
     "typescript": "~5.8.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
   },
   "private": true
 }

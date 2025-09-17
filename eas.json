@@ -9,7 +9,10 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "GOOGLE_MAPS_API_KEY"
+      }
     },
     "production": {
       "autoIncrement": true
@@ -19,5 +22,3 @@
     "production": {}
   }
 }
-
-
