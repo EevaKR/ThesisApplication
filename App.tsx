@@ -1,113 +1,123 @@
-import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import * as BackgroundTask from 'expo-background-task'
+import { Text, View } from 'react-native';
 import * as TaskManager from 'expo-task-manager'
 import * as Location from 'expo-location'
-import { Button } from 'react-native';
-import PermissionsButton from './PermissionButton';
+import { Button } from 'react-native-paper';
+import { ScrollView } from 'react-native';
+import React, { useRef } from 'react';
+import * as Notifications from 'expo-notifications'
+import * as FileSystem from 'expo-file-system';
+import  { schedulePushNotification } from './notifications';
+import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import {  } from './types';
+import ModalOne from './ModalOne';
+import { styles } from './styles';
+import { createStackNavigator } from '@react-navigation/stack';
+import {NavigationContainer } from '@react-navigation/native'
+import HomeScreen from './HomeScreen'
+import MapScreen from './MapScreen';
+import OptionsScreen from './OptionsScreen';
+//HUOM!! TAUOTUKSEEN MYÖS FOREGROUNDLOCATION, EI PELKKÄÄ BACKGROUNDLOCATIONIA!!!!
+
+//TEE TIEDOSTON TALLENNUS UUDELLEEN YKSINKERTAISEMMAKSI JA YHDISTÄ SE ZUSTANDIIN!!!
 
 
+//YLÄPALKKIIN/ALAPALKKIIN RATTAAN KUVA JOSTA OHJAA OPTIONS-SIVULLE!
 
+const Stack = createStackNavigator();
+//KORJAA
+//huomioi että nyt api-avain app.jsonissa ja app.json .gitignoressa 
+// --> tallenna joko eas.secretiin tai käytä env-muuttujia
+//JAA KOODI OSIIN SITTEN KUN TOIMII LOPULTA
+//SIIVOA YLIMÄÄRÄISET DEBUGGAUKSET POIS!!!
+//splash screen puuttuu
+//jaa eri sivuihin toiminnot mm importaa permission button, 
+//background taskit pitää olla app-sivulla
+//yksinkertaista vielä filestoragen tallennusta
+//ja testaa sen jälkeen toimiiko
+const LOCATIONS_FILE = FileSystem.documentDirectory + 'background_locations.json';
+const ERROR_LOG_FILE = FileSystem.documentDirectory + 'error_logs.json';
 
-//yläpalkkiin "seurataan sijaintia" --> pysyy paremmin hengissä
-//eli status bariin notifikaatio
-//background job ajastetusti 30 sekunnin välein, mikä ei tee mitään
-//miten background jobin ajastus tehdään
-//lisää location 1 min välein päivitys TAI niin et kun sijainti muuttuu tarpeeksi
-
-
-const BACKGROUND_LOCATION = 'BACKGROUND_LOCATION'
-
-const requestPermissions = async () => {
-  const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-  if (foregroundStatus === 'granted') {
-    const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-    if (backgroundStatus === 'granted') {
-      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
-        accuracy: Location.Accuracy.Balanced,
-      });
-    }
-  }
-};
-
-
-
-TaskManager.defineTask(BACKGROUND_LOCATION, ({ data, error }) => {
+//määritellään background task
+const BACKGROUND_LOCATION = 'background-location-task';
+//callback-funktio, joka suoritetaan, kun sijaintitietoja saapuu taustalla. Se on nimetty BACKGROUND_LOCATION, ja se käsittelee data-objektin, joka sisältää sijainnit.
+//TaskManager.defineTask rekisteröi tehtävän, joka aktivoituu kun Location.startLocationUpdatesAsync saa uusia sijaintipäivityksiä.
+//Funktio tarkistaa, onko tullut virhe (error) tai dataa (data).
+//Jos dataa on, se tulostaa sijainnit konsoliin.
+TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
   if (error) {
-    // Error occurred - check `error.message` for more details.
+    console.error("Location task error: ", error.message);
+    // Saving error to file
+    try {
+      const errorData = {
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+      //sijainti tallentuu
+      await FileSystem.writeAsStringAsync(ERROR_LOG_FILE, JSON.stringify(errorData));
+
+    } catch (fileError) {
+      console.error("Failed to save error to file: ", fileError);
+    }
+
     return;
   }
   if (data) {
-    const { locations } = data;
-    // do something with the locations captured in the background --> save
+    //tallentaa locations-taulukon jossa alkiot Location.LocationObject
+    const { locations } = data as { locations: Location.LocationObject[] };
+    //notification send to user
+    schedulePushNotification()
+    console.log("Received background locations: ", locations);
+
+    try {
+      //reading existing locations
+      let existingLocations = [];
+      const fileExists = await FileSystem.getInfoAsync(LOCATIONS_FILE);
+      if (fileExists.exists) {
+        const fileContent = await FileSystem.readAsStringAsync(LOCATIONS_FILE)
+        existingLocations = JSON.parse(fileContent)
+      }
+      //Adding new locations with timestamps
+      const newLocations = locations.map(loc => ({
+        ...loc,
+        //receivedAt: new Date().toISOString(),
+        //backgroundTask: true
+      }));
+      //Tallentaa puhelimen muistiin, tallennus säilyy niin kauan kunnes käyttäjä poistaa sen
+      const updatedLocations = [...existingLocations, ...newLocations];
+      await FileSystem.writeAsStringAsync(LOCATIONS_FILE, JSON.stringify(updatedLocations, null, 2));
+
+      console.log(`Saved ${newLocations.length} new locations. Total: ${updatedLocations.length}`);
+    } catch (storageError) {
+      console.error("Failed to save locations: ", storageError);
+    }
   }
 });
 
-
-
-
-
-
-//locations = taulukko sijaintiobjekteja
-//Kun käytät expo-location-moduulin taustapaikannusta, Expo automaattisesti lähettää sijaintipäivitykset taustatehtävälle. Nämä päivitykset tulevat data.locations-kenttään, joka on taulukko sijaintiobjekteja (LocationObject[]).
-/*TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
- if (error) {
-   console.error('Failed', error) 
-   return;
- }
-if (data) {
- const {locations} = data as { locations: Location.LocationObject[]};
- console.log('Received new locations', locations);
- }
-}); */
-
-//määritellään taustatehtävä, defining background task
-//Kun haluat käyttää taustapaikannusta, sinun täytyy ensin määritellä tehtävä TaskManager.defineTask-metodilla sovelluksen ylimmällä tasolla – eli ei komponentin sisällä, vaan esimerkiksi tiedoston alussa.
-/*TaskManager.defineTask(BACKGROUND_LOCATION, async () => {
-  try {
-    const now = Date.now();
-    console.log(`Location ..., now time as a example: ${new Date(now).toISOString()}`);
-  } catch (error) {
-    console.error('Failed', error);
-    return BackgroundTask.BackgroundTaskResult.Failed;
-  }
-  return BackgroundTask.BackgroundTaskResult.Success;
-}) */
-/*
- */ 
 
 
 export default function App() {
 
-
-
-  /*await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
-    accuracy: Location.Accuracy.Balanced,
-  }) */ 
-
-
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.paragraph}>text</Text>
-      <PermissionsButton></PermissionsButton>
-      
-    </View>
+    return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName='Home'>
+        <Stack.Screen name="Home" component={HomeScreen}
+          options={{
+            title: 'AJOPIIRTURI',
+            headerTitleAlign: 'center',
+            headerStyle: {
+              backgroundColor: '#007AFF',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold'
+            }
+          }} />
+          <Stack.Screen name= "Map" component={MapScreen}
+          ></Stack.Screen>
+          <Stack.Screen name= "Options" component={OptionsScreen}
+          ></Stack.Screen>
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  paragraph: {
-    fontSize: 18,
-    textAlign: 'center',
-  }
-});

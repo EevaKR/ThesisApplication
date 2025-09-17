@@ -17,11 +17,18 @@
       "supportsTablet": true
     },
     "android": {
+
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA9Zin43AB7l50ZVyPz8f9rAjNVzJpDlko"
+        }
+      },
       
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE"
       ],
 
       "adaptiveIcon": {
@@ -35,7 +42,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-background-task",
       [
       "expo-location",
         {
