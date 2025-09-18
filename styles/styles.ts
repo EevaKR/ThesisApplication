@@ -1,35 +1,58 @@
 import { StyleSheet } from "react-native";
 import { Dimensions } from "react-native";
 
+//const screenHeight = Dimensions.get('window').height;
 
-//TARKASTA TYYLIT VIELÄ, FLEXIT POIS OSASTA!!!!!!!!!!
-const screenHeight = Dimensions.get('window').height;
+
+//TODO: TEE VÄRIT ERILLISIKSI!!!
+//TODO: LAJITTELE TYYLIT
+//TODO: tee fontit
+
 
 export const styles = StyleSheet.create({
+    optionsContainer: {
+    padding: 20,
+  },
+  optionsLabel: {
+    fontSize: 20,
+    marginBottom: 20,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  switchLabel: {
+    marginRight: 10,
+    fontSize: 16,
+  },
+
+    screen: {
+        flex: 1,
+        backgroundColor: '#FFFAFA',
+    },
+    label: {
+        fontSize: 18,
+        marginBottom: 10,
+        color: '#1d3537',
+        fontWeight: 'bold',
+    },
     topButtonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between', 
+        justifyContent: 'space-around',
         alignItems: 'center',
-        paddingTop: 20,
-        paddingHorizontal: 12,
         paddingVertical: 10,
-        paddingRight: 150,
-        paddingLeft: 1,
-        //alignItems: 'flex-start',
-        gap: 10,
-        width: '100%',
-        position: 'relative',
-        zIndex: 1000,
+        paddingHorizontal: 12,
+        backgroundColor: '#fff',
     },
     topButton: {
         backgroundColor: '#007AFF',
         paddingVertical: 10,
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
         borderRadius: 8,
-        width: '100%',
         flexDirection: 'row',
+        alignItems: 'center',
         minWidth: 100,
-        alignItems: 'center',   
+        gap: 6,
     },
     mapContainer: {
         flexGrow: 1,
@@ -56,7 +79,7 @@ export const styles = StyleSheet.create({
         backgroundColor: '#10bc10',
         paddingVertical: 12,
         paddingHorizontal: 20,
-        borderRadius: 50, 
+        borderRadius: 50,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -93,23 +116,23 @@ export const styles = StyleSheet.create({
         marginTop: 10,
     },
     box: {
-    width: 100,
-    height: 80,
-    backgroundColor: 'black',
-    margin: 30,
-  },
-  optionsScreen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1e8ad3'
-  },
-   modalView: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
+        width: 100,
+        height: 80,
+        backgroundColor: 'black',
+        margin: 30,
+    },
+    optionsScreen: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1e8ad3'
+    },
+    modalView: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center'
 
-  },
+    },
 
 });
