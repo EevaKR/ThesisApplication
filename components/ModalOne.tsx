@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native'
 import React from 'react';
-import { styles } from './styles';
+import { styles } from '../styles/styles';
 
 //TÄMÄ FILE OK UUSIMPAAN BRANCHIIN VERRATEN
 

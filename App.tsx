@@ -1,40 +1,25 @@
-import { useState, useEffect } from 'react';
-import { Text, View } from 'react-native';
 import * as TaskManager from 'expo-task-manager'
 import * as Location from 'expo-location'
-import { Button } from 'react-native-paper';
-import { ScrollView } from 'react-native';
 import React, { useRef } from 'react';
-import * as Notifications from 'expo-notifications'
 import * as FileSystem from 'expo-file-system';
-import  { schedulePushNotification } from './notifications';
-import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
-import {  } from './types';
-import ModalOne from './ModalOne';
-import { styles } from './styles';
+import { } from './src/types';
 import { createStackNavigator } from '@react-navigation/stack';
-import {NavigationContainer } from '@react-navigation/native'
-import HomeScreen from './HomeScreen'
-import MapScreen from './MapScreen';
-import OptionsScreen from './OptionsScreen';
+import { NavigationContainer, useNavigation, NavigationProp } from '@react-navigation/native'
+import HomeScreen from './screens/HomeScreen'
+import MapScreen from './screens/MapScreen';
+import OptionsScreen from './screens/OptionsScreen';
+import { Ionicons } from '@expo/vector-icons'
+import { TouchableOpacity } from 'react-native';
+import { Button } from 'react-native-paper';
+
 //HUOM!! TAUOTUKSEEN MYÖS FOREGROUNDLOCATION, EI PELKKÄÄ BACKGROUNDLOCATIONIA!!!!
 
 //TEE TIEDOSTON TALLENNUS UUDELLEEN YKSINKERTAISEMMAKSI JA YHDISTÄ SE ZUSTANDIIN!!!
 
-
-//YLÄPALKKIIN/ALAPALKKIIN RATTAAN KUVA JOSTA OHJAA OPTIONS-SIVULLE!
-
 const Stack = createStackNavigator();
-//KORJAA
-//huomioi että nyt api-avain app.jsonissa ja app.json .gitignoressa 
-// --> tallenna joko eas.secretiin tai käytä env-muuttujia
-//JAA KOODI OSIIN SITTEN KUN TOIMII LOPULTA
-//SIIVOA YLIMÄÄRÄISET DEBUGGAUKSET POIS!!!
 //splash screen puuttuu
-//jaa eri sivuihin toiminnot mm importaa permission button, 
 //background taskit pitää olla app-sivulla
 //yksinkertaista vielä filestoragen tallennusta
-//ja testaa sen jälkeen toimiiko
 const LOCATIONS_FILE = FileSystem.documentDirectory + 'background_locations.json';
 const ERROR_LOG_FILE = FileSystem.documentDirectory + 'error_logs.json';
 
@@ -66,7 +51,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
     //tallentaa locations-taulukon jossa alkiot Location.LocationObject
     const { locations } = data as { locations: Location.LocationObject[] };
     //notification send to user
-    schedulePushNotification()
+    //schedulePushNotification()
     console.log("Received background locations: ", locations);
 
     try {
@@ -98,10 +83,21 @@ TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
 
 export default function App() {
 
-    return (
+  //TODO: siirrä types-tiedostoon
+  type RootStackParamList = {
+    Home: undefined,
+    Map: undefined,
+    Options: undefined,
+  }
+
+  //const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName='Home'>
-        <Stack.Screen name="Home" component={HomeScreen}
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
           options={{
             title: 'AJOPIIRTURI',
             headerTitleAlign: 'center',
@@ -111,13 +107,36 @@ export default function App() {
             headerTintColor: '#fff',
             headerTitleStyle: {
               fontWeight: 'bold'
-            }
-          }} />
-          <Stack.Screen name= "Map" component={MapScreen}
-          ></Stack.Screen>
-          <Stack.Screen name= "Options" component={OptionsScreen}
-          ></Stack.Screen>
+            },
+          }}
+        />
+        <Stack.Screen
+          name="Map"
+          component={MapScreen}
+          options={{
+            title: 'Ajopiirturi',
+            headerStyle: {
+              backgroundColor: '#007AFF',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        <Stack.Screen name="Options" component={OptionsScreen}
+        options={{
+            title: 'Asetukset',
+            headerStyle: {
+              backgroundColor: '#007AFF',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        ></Stack.Screen>
       </Stack.Navigator>
-    </NavigationContainer>
+    </NavigationContainer >
   );
 }
