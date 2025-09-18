@@ -183,3 +183,12 @@ export interface BackgroundTaskResponse {
   message?: string;
   data?: any;
 }
+
+
+export type RootStackParamList = {
+    Home: undefined,
+    Map: undefined,
+    Options: undefined,
+  }
+
+

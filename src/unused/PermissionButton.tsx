@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { styles } from './styles';
+import { styles } from '../../styles/styles';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
@@ -7,10 +7,17 @@ import * as FileSystem from 'expo-file-system';
 import * as Notifications from 'expo-notifications';
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocationStore } from "./store";
+import { useLocationStore } from "../../store/store";
+//foreground ja background tallentavat sijainteja samaan storen locations-taulukkoon
+
+//TODO: tee tallennukseen aikaleima ja aloitus- ja lopetusaika näkyviin
+//TODO: tumma tila
 
 
-//TODO: lopeta-buttonin teko
+
+//POISTA TÄMÄ SIVU, TÄTÄ EI KÄYTETÄ ENÄÄ!!!!!!!!!!
+
+
 const LOCATIONS_FILE = FileSystem.documentDirectory + 'background_locations.json';
 const BACKGROUND_LOCATION = 'background-location-task';
 
@@ -19,6 +26,8 @@ const PermissionButton = () => {
     locations,
     setLocations,
     addLocation,
+    startTracking,
+    stopTracking
   } = useLocationStore();
 
   // Loads locations from file when uses component at the first time
@@ -28,13 +37,13 @@ const PermissionButton = () => {
       if (fileExists.exists) {
         const fileContent = await FileSystem.readAsStringAsync(LOCATIONS_FILE);
         const parsedLocations = JSON.parse(fileContent);
-        
+
         // Changes file format to store format
         const storeLocations = parsedLocations.map((loc: any) => ({
           ...loc,
           timestamp: new Date(loc.receivedAt).getTime()
         }));
-        
+
         setLocations(storeLocations);
         console.log(`Loaded ${storeLocations.length} locations from file`)
       } else {
@@ -52,7 +61,7 @@ const PermissionButton = () => {
   }, []);
 
   const setLocationInfo = (newLocation: Location.LocationObject) => {
-    setLocations(prev => [...prev, newLocation])
+    addLocation(newLocation)
   };
 
   const requestPermissions = async () => {
@@ -61,7 +70,7 @@ const PermissionButton = () => {
       console.log("Foreground permission: ", foregroundStatus)
 
       if (foregroundStatus === 'granted') {
-
+        startTracking(); //boolean isTracking => true
         //aloitetaan foregroundLocation-paikannus
         await Location.watchPositionAsync(
           {
@@ -123,10 +132,29 @@ const PermissionButton = () => {
     }
   };
 
+  const stopLocationTracking = async () => {
+    try {
+      stopTracking(); // isTracking boolean => false
+      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION);
+      await FileSystem.writeAsStringAsync(LOCATIONS_FILE, JSON.stringify(locations))
+      console.log("Reitti tallennetut ja seuranta lopetettu")
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Paikannus lopetettu",
+          body: "Reitti tallennettu onnistuneesti.",
+        },
+        trigger: null
+      });
+    } catch (error) {
+      console.error("Failed to stop tracking ", error);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={[styles.topButtonContainer, { zIndex: 1000, elevation: 1000 }]}>
+        <View style={styles.topButtonContainer}>
           <Pressable style={({ pressed }) => [styles.topButton, pressed &&
             { opacity: 0.7 }]} onPress={requestPermissions}>
 
@@ -137,9 +165,15 @@ const PermissionButton = () => {
 
             <Text style={styles.buttonText}> <Ionicons name="close-circle-outline" size={20}></Ionicons> TYHJENNÄ TIEDOT </Text>
           </Pressable>
+          <Pressable style={({ pressed }) => [styles.topButton, pressed &&
+            { opacity: 0.7 }]} onPress={stopLocationTracking}>
+
+            <Text style={styles.buttonText}> <Ionicons name="stop-circle-sharp" size={20}></Ionicons> LOPETA PAIKANNUS </Text>
+          </Pressable>
         </View>
+        {/* Sijaintien listaus */}
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ flex: 1, marginTop: 100 }}
           contentContainerStyle={{ padding: 16 }}
           scrollEventThrottle={16}
         >
