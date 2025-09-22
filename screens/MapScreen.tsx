@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useLayoutEffect} from 'react';
 import { styles } from '../styles/styles';
 import ModalOne from '../components/ModalOne';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline, Region } from 'react-native-maps';
@@ -10,8 +9,13 @@ import { useLocationActions } from '../src/hooks/useLocationActions'
 import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../src/types';
+import type { LocationObject } from 'expo-location';
+import { Modal } from 'react-native-paper';
 
 //TODO: tee nappi reaktiiviseksi että väri muuttuu tms kun sitä painetaan
+//TODO: koordinantit, debug-mielessä niiden tulisi näkyä jotta näkee toimiiko pausetus
+
+
 
 export default function MapScreen() {
 
@@ -19,11 +23,15 @@ export default function MapScreen() {
 
     //palauttaa tilan ja toimintoja jotka liittyy location/modal
     //haetaan 3 asiaa zustand storesta, locations, modalVisible, setModalVisible
+
     const {
         locations,
         modalVisible,
         setModalVisible,
-        isTracking
+        isTracking,
+        lastLocationTimestamp,
+        modalType,
+        setModalType
     } = useLocationStore(); //toimii react-komponentissa
 
     const {
@@ -52,6 +60,27 @@ export default function MapScreen() {
       latitudeDelta: 0.05, //zoomauksen taso
       longitudeDelta: 0.05,
     }; */
+/*
+    //tauotus-option
+    const usePauseOption = () => {
+        useEffect(() => {
+            const pauseTime = setInterval(() => {
+                if (lastLocationTimestamp) {
+                    const now = Date.now();
+                    const diff = now - lastLocationTimestamp;
+                    if (diff < 2 * 60 * 1000 && modalType !== 'pause') {
+                        setModalType('pause')
+                    }
+
+                    if (diff <= 2 * 60 * 1000 && modalType === 'pause') {
+                        setModalType(null); //modal ei näy kun liike jatkuu
+                    }
+                }
+            }, 10000); //tarkistaa tilaa 10 sekunnin välein
+
+            return () => clearInterval(pauseTime)
+        }, [lastLocationTimestamp, modalType, setModalType])
+    } */
 
     useLayoutEffect(() => {
         navigation.setOptions({
@@ -81,12 +110,15 @@ export default function MapScreen() {
     const start = coordinates[0];
     const end = coordinates[coordinates.length - 1];
 
+    //usePauseOption(); //aktivoi pause-tilan tarkastuksen 
     return (
         <View style={styles.screen}>
             <ModalOne
-                visible={modalVisible}
+                visible={modalType === 'settings'}
                 onClose={() => setModalVisible(false)}
             />
+
+            <Modal visible={modalType === 'pause'}><Text>Taukotila havaittu, lähde liikkeelle niin paikannustoiminto jatkuu</Text></Modal>
 
             <View style={styles.topButtonContainer}>
                 <Pressable style={styles.topButton} onPress={requestPermissions}>
@@ -105,7 +137,22 @@ export default function MapScreen() {
                     </Text>
                 </Pressable>
             </View>
-
+            <ScrollView
+                style={{ flex: 1, marginTop: 100 }}
+                contentContainerStyle={{ padding: 16 }}
+                scrollEventThrottle={16}
+            >
+                {locations.length > 0 ? (
+                    locations.map((loc: LocationObject, index: number) => (
+                        <Text key={index} style={styles.locationText}>
+                            {index + 1}. Leveysaste: {loc.coords.latitude}, Pituusaste: {loc.coords.longitude}
+                            {loc.timestamp ? ` (${new Date(loc.timestamp).toLocaleTimeString()})` : ''}
+                        </Text>
+                    ))
+                ) : (
+                    <Text>Ei sijaintitietoja vielä</Text>
+                )}
+            </ScrollView>
             <MapView
                 provider={PROVIDER_GOOGLE}
                 initialRegion={region}

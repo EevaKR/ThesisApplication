@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native'
-import React from 'react'
+import React, {useState} from 'react'
 import { styles } from '../styles/styles'
 import { NavigationProp } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';

@@ -11,6 +11,10 @@ import { setStatusBarTranslucent } from 'expo-status-bar';
 
 //interfacessa määritellään tietorakenne, eli mitä kenttiä ja arvoja 
 //jokin objekti voi sisältää
+
+//siirrä types.ts:aan
+type ModalType = 'settings' | 'pause' | null;
+
 interface LocationStore {
     locations: LocationObject[];
     isTracking: boolean,
@@ -20,6 +24,10 @@ interface LocationStore {
     setModalVisible: (visible: boolean) => void;
     startTracking: () => void;
     stopTracking: () => void;
+    lastLocationTimestamp: number | null;
+    setLastLocationTimestamp: (timestamp: number) => void;
+    modalType: ModalType,
+    setModalType: (type: ModalType) => void;
 
 }
 
@@ -34,8 +42,12 @@ export const useLocationStore = create<LocationStore>((set) => ({
         })),
     setModalVisible: (visible) => set({ modalVisible: visible }),
     startTracking: () => set({ isTracking: true }),
-    stopTracking: () => set({ isTracking: false })
-}))
+    stopTracking: () => set({ isTracking: false }),
+    lastLocationTimestamp: null, //onko oikea tyyppi????
+    setLastLocationTimestamp: (timestamp) => set({ lastLocationTimestamp: timestamp }),
+    modalType: null,
+    setModalType: (type) => set({ modalType: type }),
+}));
 
 
 //TODO: onko tämä käytössä???
@@ -46,12 +58,13 @@ export const usePauseStore = create((set) => ({
 
 
 //Asetukset-valikon store
-  export type SettingsState = {
+export type SettingsState = {
     isAutoPauseEnabled: boolean,
     setAutoPauseEnabled: (value: boolean) => void;
-  }
+}
 
 export const useSettingsStore = create<SettingsState>((set) => ({
     isAutoPauseEnabled: false,
     setAutoPauseEnabled: (value: boolean) => set({ isAutoPauseEnabled: value })
 }));
+
