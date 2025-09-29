@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect} from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { styles } from '../styles/styles';
 import ModalOne from '../components/ModalOne';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline, Region } from 'react-native-maps';
@@ -11,6 +11,8 @@ import { NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../src/types';
 import type { LocationObject } from 'expo-location';
 import { Modal } from 'react-native-paper';
+import * as Location from 'expo-location'
+import { Alert } from 'react-native';
 
 //TODO: tee nappi reaktiiviseksi että väri muuttuu tms kun sitä painetaan
 //TODO: koordinantit, debug-mielessä niiden tulisi näkyä jotta näkee toimiiko pausetus
@@ -60,27 +62,27 @@ export default function MapScreen() {
       latitudeDelta: 0.05, //zoomauksen taso
       longitudeDelta: 0.05,
     }; */
-/*
-    //tauotus-option
-    const usePauseOption = () => {
-        useEffect(() => {
-            const pauseTime = setInterval(() => {
-                if (lastLocationTimestamp) {
-                    const now = Date.now();
-                    const diff = now - lastLocationTimestamp;
-                    if (diff < 2 * 60 * 1000 && modalType !== 'pause') {
-                        setModalType('pause')
+    /*
+        //tauotus-option
+        const usePauseOption = () => {
+            useEffect(() => {
+                const pauseTime = setInterval(() => {
+                    if (lastLocationTimestamp) {
+                        const now = Date.now();
+                        const diff = now - lastLocationTimestamp;
+                        if (diff < 2 * 60 * 1000 && modalType !== 'pause') {
+                            setModalType('pause')
+                        }
+    
+                        if (diff <= 2 * 60 * 1000 && modalType === 'pause') {
+                            setModalType(null); //modal ei näy kun liike jatkuu
+                        }
                     }
-
-                    if (diff <= 2 * 60 * 1000 && modalType === 'pause') {
-                        setModalType(null); //modal ei näy kun liike jatkuu
-                    }
-                }
-            }, 10000); //tarkistaa tilaa 10 sekunnin välein
-
-            return () => clearInterval(pauseTime)
-        }, [lastLocationTimestamp, modalType, setModalType])
-    } */
+                }, 10000); //tarkistaa tilaa 10 sekunnin välein
+    
+                return () => clearInterval(pauseTime)
+            }, [lastLocationTimestamp, modalType, setModalType])
+        } */
 
     useLayoutEffect(() => {
         navigation.setOptions({
@@ -102,24 +104,69 @@ export default function MapScreen() {
         //muokkaa modaaliin myös linking, jotta menee valikkoon
     }, []);
 
+
+    //pause-tilan tunnistustoiminto, käynnistyy automaattisesti
+    //TODO: LISÄÄ TÄHÄN HAVERSINE!!!!!!!!!!
+    //toistaa 2min välein toimintaa
+    useEffect(() => {
+        const interval =
+            setInterval(() => {
+                const now = Date.now();
+                const lastUpdate = useLocationStore.getState().lastLocationTimestamp;
+
+                if (lastUpdate && now - lastUpdate > 2 * 60 * 1000) {
+                    console.log("Tauko havaittu");
+
+                    useLocationStore.getState().setModalVisible(true);
+                    useLocationStore.getState().setModalType('pause');
+                }
+            }, 2 * 60 * 1000);
+
+            return () => clearInterval(interval); //tyhjentää arvon kun komponentti unmount
+    }, [lastLocationTimestamp])
+
+
+
+    ////////////////////////////
     const coordinates = locations.map(loc => ({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude
     }));
-
+//markereiden alku- ja loppukoordinantit
     const start = coordinates[0];
     const end = coordinates[coordinates.length - 1];
 
-    //usePauseOption(); //aktivoi pause-tilan tarkastuksen 
+    const checkIsLocationEnabled = async () => {
+        const locationEnabled = await Location.hasServicesEnabledAsync();
+            if (locationEnabled) {
+                console.log("Laitteen paikannus päällä")
+            } else {
+                console.warn("Laitteen paikannus ei päällä")
+            }
+        }
+    }
+
+    useEffect(() => {
+        const checkLocation = async () => {
+            const enabled = await Location.hasServicesEnabledAsync();
+            if (!enabled) {
+                Alert.alert(
+                    "Paikannus ei ole käytössä",
+                    "Laitteen, sijaintipalvelut eivät ole käytössä. Ota ne käyttöön asetuksista."
+                );
+            }
+        };
+        checkLocation();
+    }, [])
+
+  
     return (
         <View style={styles.screen}>
             <ModalOne
                 visible={modalType === 'settings'}
                 onClose={() => setModalVisible(false)}
             />
-
             <Modal visible={modalType === 'pause'}><Text>Taukotila havaittu, lähde liikkeelle niin paikannustoiminto jatkuu</Text></Modal>
-
             <View style={styles.topButtonContainer}>
                 <Pressable style={styles.topButton} onPress={requestPermissions}>
                     <Text style={styles.buttonText}>

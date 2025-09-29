@@ -10,10 +10,9 @@ import { useAuthStore } from './store/authStore';
 import MainStack from './MainStack';
 import AuthStack from './AuthStack';
 
-
-//TEE LOGINIIN PERUSTUVA NAVIGAATIO, JOKO KAKSI STACKIA TAI 
-
 //Haversinella voi tehdä tuon tauotusasian
+// nyt tehty setIntervalilla
+
 
 const Stack = createStackNavigator();
 //TODO: splash screen puuttuu
@@ -83,6 +82,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION, async ({ data, error }) => {
 });
 
 
+
+
 export default function App() {
 
   const isSignedIn = useAuthStore((state) => state.isSignedIn);
@@ -91,7 +92,7 @@ export default function App() {
   console.log('Is signed in: ', isSignedIn)
   return (
     <NavigationContainer>
-     {isSignedIn ? <MainStack /> : <AuthStack />}
+      {isSignedIn ? <MainStack /> : <AuthStack />}
     </NavigationContainer >
   );
 }
