@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect } from 'react';
 import { styles } from '../styles/styles';
 import ModalOne from '../components/ModalOne';
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline, Region } from 'react-native-maps';
-import { useLocationStore } from '../store/store';
+import { useLocationStore, useSettingsStore } from '../store/store';
 import { View, Text, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { useLocationActions } from '../src/hooks/useLocationActions'
@@ -33,8 +33,11 @@ export default function MapScreen() {
         isTracking,
         lastLocationTimestamp,
         modalType,
-        setModalType
+        setModalType,
+        
     } = useLocationStore(); //toimii react-komponentissa
+    
+    const {isAutoPauseEnabled} = useSettingsStore();
 
     const {
         requestPermissions,
@@ -104,15 +107,42 @@ export default function MapScreen() {
         //muokkaa modaaliin myös linking, jotta menee valikkoon
     }, []);
 
+//Haversine************************************ BETA
+function haversine(lat1: number, lon1: number, lat2:number, lon2: number): number {
+    const R = 6371000; //Maapallon säde (m)
+    const toRad = (value: number) => value * Math.PI / 180;
 
+    const dLat = toRad(lat2 - lat1)
+    const dLon = toRad(lon2 - lon1)
+
+    const a = Math.sin(dLat /2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 -a));
+
+    return R * c;
+}
     //pause-tilan tunnistustoiminto, käynnistyy automaattisesti
-    //TODO: LISÄÄ TÄHÄN HAVERSINE!!!!!!!!!!
     //toistaa 2min välein toimintaa
     useEffect(() => {
-        const interval =
-            setInterval(() => {
+        if (!isAutoPauseEnabled) return;
+
+        const interval = setInterval(() => {
+            if (locations.length >=2) {
+                const loc1 = locations[locations.length -2];
+                const loc2 = locations[locations.length -1];
+
+                const distance = haversine(
+                    loc1.coords.latitude,
+                    loc1.coords.longitude,
+                    loc2.coords.latitude,
+                    loc2.coords.longitude
+                )
+            }
                 const now = Date.now();
-                const lastUpdate = useLocationStore.getState().lastLocationTimestamp;
+                //tämä muokattu
+                const lastUpdate = useLocationStore.getState().lastLocationTimestamp
 
                 if (lastUpdate && now - lastUpdate > 2 * 60 * 1000) {
                     console.log("Tauko havaittu");
@@ -122,44 +152,52 @@ export default function MapScreen() {
                 }
             }, 2 * 60 * 1000);
 
-            return () => clearInterval(interval); //tyhjentää arvon kun komponentti unmount
-    }, [lastLocationTimestamp])
+        return () => clearInterval(interval); //tyhjentää arvon kun komponentti unmount
+    }, [locations, lastLocationTimestamp, isAutoPauseEnabled])
 
 
 
-    ////////////////////////////
+    //////////////////////////// Kartan koordinantit
     const coordinates = locations.map(loc => ({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude
     }));
-//markereiden alku- ja loppukoordinantit
+    //markereiden alku- ja loppukoordinantit
     const start = coordinates[0];
     const end = coordinates[coordinates.length - 1];
 
     const checkIsLocationEnabled = async () => {
         const locationEnabled = await Location.hasServicesEnabledAsync();
-            if (locationEnabled) {
-                console.log("Laitteen paikannus päällä")
-            } else {
-                console.warn("Laitteen paikannus ei päällä")
-            }
+        if (locationEnabled) {
+            console.log("Laitteen paikannus päällä")
+        } else {
+            console.warn("Laitteen paikannus ei päällä")
         }
     }
 
-    useEffect(() => {
-        const checkLocation = async () => {
+    // const joka tarkastaa onko paikannus enabled kutsutaan pressable-buttonista
+   
+        const checkLocationEnabled = async () => {
             const enabled = await Location.hasServicesEnabledAsync();
             if (!enabled) {
                 Alert.alert(
                     "Paikannus ei ole käytössä",
-                    "Laitteen, sijaintipalvelut eivät ole käytössä. Ota ne käyttöön asetuksista."
+                    "Laitteen sijaintipalvelut eivät ole käytössä. Ota ne käyttöön asetuksista."
                 );
+                return false;
             }
+            return true;
         };
-        checkLocation();
-    }, [])
+      
+    //yhdistää requestPermissions ja checkLocationEnabled=
+    const pressStartButton = async () => {
+        await requestPermissions();
+        await checkLocationEnabled();
+    }
 
-  
+
+
+
     return (
         <View style={styles.screen}>
             <ModalOne
@@ -168,7 +206,7 @@ export default function MapScreen() {
             />
             <Modal visible={modalType === 'pause'}><Text>Taukotila havaittu, lähde liikkeelle niin paikannustoiminto jatkuu</Text></Modal>
             <View style={styles.topButtonContainer}>
-                <Pressable style={styles.topButton} onPress={requestPermissions}>
+                <Pressable style={styles.topButton} onPress={pressStartButton}>
                     <Text style={styles.buttonText}>
                         <Ionicons name="location-sharp" size={20} /> ALOITA
                     </Text>

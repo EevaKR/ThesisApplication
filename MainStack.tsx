@@ -9,7 +9,7 @@ const Stack = createStackNavigator();
 export default function MainStack() {
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName='Map'>
         <Stack.Screen
           name="Map"
           component={MapScreen}

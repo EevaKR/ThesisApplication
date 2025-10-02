@@ -10,6 +10,7 @@ import { exchangeCodeAsync, makeRedirectUri, useAuthRequest } from 'expo-auth-se
 import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
 import * as SecureStore from 'expo-secure-store'
+import MapScreen from './MapScreen'
 
 //tarvii tehdä uusi realm keycloakiin, nyt käytössä test-realm
 // TARVIIKO TUOHON useEffectiin tehdä joku tokenin saamisjuttu vai tuleeko nyt automaattisesti???
@@ -29,14 +30,11 @@ export default function HomeScreen() {
 
 
   const redirectUri = makeRedirectUri({
-    scheme: undefined, //vaihda tämä ja laita se myös app.config.js:aan, scheme: thesisapp
+    scheme: 'thesisapp',
     path: 'callback'
   });
 
-  console.log('Generated redirect URI: ', redirectUri)
-
-  //auth request hook
-
+//auth request hook - only call when discovery is loaded
   const [request, response, promptAsync] =
     useAuthRequest(
       {
@@ -45,7 +43,7 @@ export default function HomeScreen() {
         scopes: ['openid', 'profile', 'email', 'offline_access'],
         redirectUri,
       },
-      discovery
+      discovery ?? null
     )
 
 
@@ -56,10 +54,12 @@ export default function HomeScreen() {
       //const {accessToken} = response.authentication;
       //staten muutos isSignedIn == true
       useAuthStore.getState().signIn()
-      navigation.navigate('Map')
+      
     }
   }, [response]);
 
+  //TODO: HOXXX TÄTÄ EI KUTSUTA VIELÄ, kts tuleeko tuossa uudistetussa discoveryssa automaattisesti refreshtokent
+  //TODO: usePKCE: true ja Standard Flow, kts planora-apista mallia
   const refreshAccessToken = async (refreshToken: string): Promise<any> => {
     try {
       console.log('Kokeilee saada R_tokenia')
@@ -162,15 +162,23 @@ export default function HomeScreen() {
   
   */
 
+  // Show loading while discovery is being fetched
+  if (!discovery) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <View>
       <Text>{isSignedIn ? "Olet kirjautunut" : "Et ole kirjautunut "} </Text>
       <Pressable
         onPress={() => promptAsync()}
-
-
+        disabled={!request}
         style={{
-          backgroundColor: 'blue',
+          backgroundColor: !request ? 'gray' : 'blue',
           padding: 12,
           borderRadius: 8,
           alignItems: 'center',
@@ -183,7 +191,8 @@ export default function HomeScreen() {
         iconColor='blue'
 
         size={20}
-        onPress={() => navigation.navigate('Map')}
+        onPress={() => promptAsync()}
+        disabled={!request}
       />
     </View>
   )

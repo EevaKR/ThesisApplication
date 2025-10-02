@@ -94,16 +94,17 @@ export const useLocationActions = () => {
           await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
             accuracy: Location.Accuracy.Highest,
             distanceInterval: 2, //sijainnin täytyy muuttua yli 5m ennen kuin päivittää sijaintitiedon
+            //tämä mahdollistaa sen että Android ei rajoita päivitystiheyttä samalla tavalla kuin normaalissa taustatilassa.
             foregroundService: {
-              //ei tarvii tehdä notifikaatiota erikseen, tämä riittää
               notificationTitle: 'Sijainnin seuranta',
               notificationBody: 'Sovellus seuraa sijaintiasi taustalla.',
             },
             activityType: Location.LocationActivityType.AutomotiveNavigation,
             //timeInterval: 10000, //10 sekunnin päivitysväli
-            //deferredUpdatesInterval: 5000, //akkua säästävä päivitystoiminto joka asettaa päivityksen tuleen vain 10 s välein
+            //deferredUpdatesInterval: 5000, //akkua säästävä päivitystoiminto joka asettaa päivityksen tuleen vain 10 s välein vaikka sijainti muuttuisi aiemmin tai muut päivitysehdot täyttyisivät
           });
-          console.log("Debuggausta, taustalla tapahtuva paikannus aloitettu")
+          console.log("Debug: Taustalla tapahtuva paikannus aloitettu")
+          //TODO: fix--> toimiiko tämä notifikaatio???
           await Notifications.scheduleNotificationAsync({
             content: {
               title: "Location Tracking Started",
