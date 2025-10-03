@@ -30,7 +30,8 @@ export default function HomeScreen() {
 
 
   const redirectUri = makeRedirectUri({
-    scheme: 'thesisapp',
+    scheme: undefined, //'thesisapp'
+    //OIKEA REDIRECT URLI: thesisapp://callback!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     path: 'callback'
   });
 
