@@ -16,9 +16,9 @@ export default function AuthStack() {
                     title: 'AJOPIIRTURI',
                     headerTitleAlign: 'center',
                     headerStyle: {
-                        backgroundColor: '#007AFF',
+                        backgroundColor: '#2d658a',
                     },
-                    headerTintColor: '#fff',
+                    headerTintColor: '#d9e4ec',
                     headerTitleStyle: {
                         fontWeight: 'bold'
                     },

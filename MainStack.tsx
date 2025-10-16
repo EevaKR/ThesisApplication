@@ -3,10 +3,16 @@ import React from 'react'
 import { createStackNavigator } from '@react-navigation/stack'
 import MapScreen from './screens/MapScreen'
 import OptionsScreen from './screens/OptionsScreen'
+import { useFonts } from 'expo-font';
+
 
 const Stack = createStackNavigator();
 
+
+//TODO: Siirrä värit ja fontit omaan tiedostoon
 export default function MainStack() {
+
+
 
   return (
     <Stack.Navigator initialRouteName='Map'>
@@ -16,11 +22,12 @@ export default function MainStack() {
           options={{
             title: 'Ajopiirturi',
             headerStyle: {
-              backgroundColor: '#007AFF',
+              backgroundColor: '#2d658a',
             },
-            headerTintColor: '#fff',
+            headerTintColor: '#d9e4ec',
             headerTitleStyle: {
               fontWeight: 'bold',
+              fontFamily: 'Oswald'
             },
           }}
         />
@@ -28,9 +35,9 @@ export default function MainStack() {
           options={{
             title: 'Asetukset',
             headerStyle: {
-              backgroundColor: '#007AFF',
+              backgroundColor: '#2d658a',
             },
-            headerTintColor: '#fff',
+            headerTintColor: '#d9e4ec',
             headerTitleStyle: {
               fontWeight: 'bold',
             },

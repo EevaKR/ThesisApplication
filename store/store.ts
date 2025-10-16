@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { LocationObject } from 'expo-location';
 import { setStatusBarTranslucent } from 'expo-status-bar';
-
+import * as FileSystem from 'expo-file-system';
 
 //ei tarvitse määritellä types:ts:ssa olevia tyyppejä uudelleen, 
 // jos ne on määritelty jo. 
@@ -14,6 +14,7 @@ import { setStatusBarTranslucent } from 'expo-status-bar';
 
 //siirrä types.ts:aan
 type ModalType = 'settings' | 'pause' | null;
+
 
 interface LocationStore {
     locations: LocationObject[];
@@ -43,17 +44,95 @@ export const useLocationStore = create<LocationStore>((set) => ({
     setModalVisible: (visible) => set({ modalVisible: visible }),
     startTracking: () => set({ isTracking: true }),
     stopTracking: () => set({ isTracking: false }),
-    lastLocationTimestamp: null, //onko oikea tyyppi????
+    lastLocationTimestamp: null,
     setLastLocationTimestamp: (timestamp) => set({ lastLocationTimestamp: timestamp }),
     modalType: null,
     setModalType: (type) => set({ modalType: type }),
 }));
 
 
-//TODO: onko tämä käytössä???
-export const usePauseStore = create((set) => ({
-    isPaused: false,
-    setPaused: (value: boolean) => set({ isPaused: value })
+// Pause detection store
+interface PauseStore {
+    lastRealLocationTimestamp: number | null;
+    gyroStill: boolean;
+    setLastRealLocationTimestamp: (timestamp: number) => void;
+    updateGyroStatus: (isStill: boolean) => void;
+    checkPauseCondition: (
+        locations: LocationObject[],
+        lastLocationTimestamp: number | null,
+        distanceCalculator: (loc1: LocationObject, loc2: LocationObject) => number,
+        savePauseStart: () => Promise<void>,
+        savePauseEnd: () => Promise<void>
+    ) => void;
+}
+
+export const usePauseStore = create<PauseStore>((set, get) => ({
+    lastRealLocationTimestamp: null,
+    gyroStill: true,
+
+    setLastRealLocationTimestamp: (timestamp) =>
+        set({ lastRealLocationTimestamp: timestamp }),
+
+    updateGyroStatus: (isStill) =>
+        set({ gyroStill: isStill }),
+
+    checkPauseCondition: (
+        locations,
+        lastLocationTimestamp,
+        distanceCalculator,
+        savePauseStart,
+        savePauseEnd
+    ) => {
+        const state = get();
+        const { showModalTwo, hideModalTwo, isModalTwoVisible } = useModalStore.getState();
+
+        if (locations.length < 2) return;
+
+        const loc1 = locations[locations.length - 2];
+        const loc2 = locations[locations.length - 1];
+        const distance = distanceCalculator(loc1, loc2);
+
+        // Alusta lastRealLocationTimestamp jos se on null
+        if (state.lastRealLocationTimestamp === null) {
+            set({ lastRealLocationTimestamp: Date.now() });
+        }
+
+        // päivittää ajan jos oikeasti liikkunut
+        if (distance > 10) {
+            set({ lastRealLocationTimestamp: Date.now() });
+        }
+
+        const now = Date.now();
+
+        console.log({
+            distance,
+            lastLocationTimestamp,
+            lastRealLocationTimestamp: state.lastRealLocationTimestamp,
+            gyroStill: state.gyroStill,
+            isModalTwoVisible
+        });
+
+        // Näyttää modalin jos ehdot täyttyy
+        if (
+            distance < 10 &&
+            state.gyroStill &&
+            !isModalTwoVisible
+        ) {
+            console.log("*********************************************DEBUG:Tauko havaittu*************************");
+            showModalTwo();
+            savePauseStart(); // Save pause start
+        }
+
+        // Hide pause modal if movement detected
+        if (
+            (distance >= 5 || !state.gyroStill) &&
+            isModalTwoVisible
+        ) {
+            console.log("Tauko päättynyt (Zustand)");
+            hideModalTwo();
+            savePauseEnd(); // Save pause end
+        }
+    }
 }))
 
 
@@ -68,3 +147,23 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     setAutoPauseEnabled: (value: boolean) => set({ isAutoPauseEnabled: value })
 }));
 
+
+//temp modal store modalTypen sijasta
+
+type ModalStore = {
+    isModalOneVisible: boolean,
+    isModalTwoVisible: boolean,
+    showModalOne: () => void;
+    hideModalOne: () => void;
+    showModalTwo: () => void;
+    hideModalTwo: () => void;
+};
+
+export const useModalStore = create<ModalStore>((set) => ({
+    isModalOneVisible: false,
+    isModalTwoVisible: false,
+    showModalOne: () => set({ isModalOneVisible: true }),
+    hideModalOne: () => set({ isModalOneVisible: false }),
+    showModalTwo: () => set({ isModalTwoVisible: true }),
+    hideModalTwo: () => set({ isModalTwoVisible: false }),
+}));

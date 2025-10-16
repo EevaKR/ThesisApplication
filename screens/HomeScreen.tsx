@@ -35,7 +35,9 @@ export default function HomeScreen() {
     path: 'callback'
   });
 
-//auth request hook - only call when discovery is loaded
+
+  console.log("Redirect URI: ", redirectUri)
+//auth request hook, only called when discovery is loaded
   const [request, response, promptAsync] =
     useAuthRequest(
       {
@@ -179,14 +181,14 @@ export default function HomeScreen() {
         onPress={() => promptAsync()}
         disabled={!request}
         style={{
-          backgroundColor: !request ? 'gray' : 'blue',
+          backgroundColor: !request ? 'gray' : '#37609d',
           padding: 12,
           borderRadius: 8,
           alignItems: 'center',
           marginVertical: 10,
         }}
 
-      ><Text>LOGIN</Text></Pressable>
+      ><Text style={{ color: '#d9e4ec', fontWeight: 'bold' }}>LOGIN</Text></Pressable>
       <IconButton
         icon="camera"
         iconColor='blue'

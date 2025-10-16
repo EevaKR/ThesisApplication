@@ -8,6 +8,14 @@ export interface LocationData {
   locations: Location.LocationObject[];
 }
 
+// Pause event types
+export interface PauseEvent {
+  startTime: number;
+  endTime: number | null;
+  latitude: number;
+  longitude: number;
+}
+
 export interface ErrorLogEntry {
   error: string;
   timestamp: string;
@@ -190,5 +198,3 @@ export type RootStackParamList = {
     Map: undefined,
     Options: undefined,
   }
-
-

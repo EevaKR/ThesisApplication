@@ -20,9 +20,11 @@ export const useLocationActions = () => {
     addLocation,
     startTracking,
     stopTracking,
-    setLastLocationTimestamp
+    setLastLocationTimestamp,
+    isTracking
   } = useLocationStore();
 
+  //lataa sijainnin kerran kun component == mounting
   useEffect(() => {
     const loadLocationsFromFile = async () => {
       try {
@@ -46,6 +48,32 @@ export const useLocationActions = () => {
     loadLocationsFromFile();
   }, []);
 
+
+  // päivittää storea säännöllisesti kun tracking on päällä
+useEffect(() => {
+  if (!isTracking) return;
+  
+  const interval = setInterval(async () => {
+    try {
+      const fileExists = await FileSystem.getInfoAsync(LOCATIONS_FILE);
+      if (fileExists.exists) {
+        const fileContent = await FileSystem.readAsStringAsync(LOCATIONS_FILE);
+        const parsedLocations = JSON.parse(fileContent);
+        const storeLocations = parsedLocations.map((loc: any) => ({
+          ...loc,
+          timestamp: new Date(loc.receivedAt).getTime()
+        }));
+        setLocations(storeLocations);
+      }
+    } catch (error) {
+      console.error("Failed to reload locations: ", error);
+    }
+  }, 5000); // 5 sekunnin välein
+  
+  return () => clearInterval(interval);
+}, [isTracking]);
+
+  //TODO: nythän tää edelleen päivittää sitä storea suoraan, pitäisi mennä niin päin et tallentaa laitteeseen  ja store siitä hakee laitteeseen tallennetun tiedon
   const requestPermissions = async () => {
     try {
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
@@ -59,10 +87,10 @@ export const useLocationActions = () => {
             accuracy: Location.Accuracy.Highest,
             //timeInterval: 5000,
             distanceInterval: 2,
-            //TODO: voiko tähän määrittää activityType: Location.LocationActivityType.AutomotiveNavigation,
+            //TODO: muuta Location.LocationActivityType.AutomotiveNavigation, vain iOS
           }, 
           async (location) => {
-            addLocation(location); //tallennetaan paikkatieto storeen 
+            //addLocation(location); //tallennetaan paikkatieto storeen 
             setLastLocationTimestamp(Date.now()); //updating latest timestamp
 
             try {
@@ -94,24 +122,24 @@ export const useLocationActions = () => {
           await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION, {
             accuracy: Location.Accuracy.Highest,
             distanceInterval: 2, //sijainnin täytyy muuttua yli 5m ennen kuin päivittää sijaintitiedon
-            //tämä mahdollistaa sen että Android ei rajoita päivitystiheyttä samalla tavalla kuin normaalissa taustatilassa.
+            //foreground service mahdollistaa sen että Android ei rajoita päivitystiheyttä samalla tavalla kuin normaalissa taustatilassa.
             foregroundService: {
               notificationTitle: 'Sijainnin seuranta',
               notificationBody: 'Sovellus seuraa sijaintiasi taustalla.',
             },
             activityType: Location.LocationActivityType.AutomotiveNavigation,
             //timeInterval: 10000, //10 sekunnin päivitysväli
-            //deferredUpdatesInterval: 5000, //akkua säästävä päivitystoiminto joka asettaa päivityksen tuleen vain 10 s välein vaikka sijainti muuttuisi aiemmin tai muut päivitysehdot täyttyisivät
+            deferredUpdatesInterval: 10000, //akkua säästävä päivitystoiminto joka asettaa päivityksen tuleen vain 10 s välein vaikka sijainti muuttuisi aiemmin tai muut päivitysehdot täyttyisivät
           });
           console.log("Debug: Taustalla tapahtuva paikannus aloitettu")
           //TODO: fix--> toimiiko tämä notifikaatio???
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: "Location Tracking Started",
-              body: "Background location tracking is now active",
-            },
-            trigger: null,
-          });
+          // await Notifications.scheduleNotificationAsync({
+          //   content: {
+          //     title: "Location Tracking Started",
+          //     body: "Background location tracking is now active",
+          //   },
+          //   trigger: null,
+          // });
         }
       }
     } catch (error) {

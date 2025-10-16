@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     topButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#37609d',
         paddingVertical: 10,
         paddingHorizontal: 14,
         borderRadius: 8,
@@ -76,7 +76,7 @@ export const styles = StyleSheet.create({
         color: '#1d3537',
     },
     button: {
-        backgroundColor: '#10bc10',
+        backgroundColor: '#37609d',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 50,
@@ -87,7 +87,7 @@ export const styles = StyleSheet.create({
         gap: 10,
     },
     buttonText: {
-        color: '#FFFAFA',
+        color: '#d9e4ec',
         textAlign: 'center',
         fontSize: 16,
         fontWeight: 'bold',
